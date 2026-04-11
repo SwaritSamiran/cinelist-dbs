@@ -190,3 +190,125 @@ export async function getUserProfile(userId) {
     return null;
   }
 }
+
+// ============================================================
+// COLLABORATIVE LISTS
+// ============================================================
+
+export async function createCollabList(userId, name, description) {
+  try {
+    const data = await sql`
+      INSERT INTO collaborative_lists (name, description, created_by)
+      VALUES (${name}, ${description}, ${userId})
+      RETURNING *
+    `;
+    const list = data[0];
+    
+    // Automatically add creator as owner
+    await sql`
+      INSERT INTO collaborative_list_members (list_id, user_id, role)
+      VALUES (${list.id}, ${userId}, 'owner')
+    `;
+    
+    return { data: list, error: null };
+  } catch (error) {
+    console.error('Create collab list error:', error);
+    return { data: null, error };
+  }
+}
+
+export async function getUserCollabLists(userId) {
+  try {
+    const data = await sql`
+      SELECT cl.*, clm.role 
+      FROM collaborative_lists cl
+      JOIN collaborative_list_members clm ON cl.id = clm.list_id
+      WHERE clm.user_id = ${userId}
+      ORDER BY cl.created_at DESC
+    `;
+    return data || [];
+  } catch (error) {
+    console.error('Get user collab lists error:', error);
+    return [];
+  }
+}
+
+export async function getCollabListMovies(listId) {
+  try {
+    const data = await sql`
+      SELECT clm.*, m.* 
+      FROM collaborative_list_movies clm
+      JOIN movies m ON clm.tmdb_id = m.tmdb_id
+      WHERE clm.list_id = ${listId}
+      ORDER BY clm.added_at DESC
+    `;
+    return data || [];
+  } catch (error) {
+    return [];
+  }
+}
+
+export async function addMovieToCollabList(listId, tmdbId, userId, movieData) {
+  if (movieData) await cacheMovie(movieData);
+  try {
+    const data = await sql`
+      INSERT INTO collaborative_list_movies (list_id, tmdb_id, added_by)
+      VALUES (${listId}, ${Number(tmdbId)}, ${userId})
+      RETURNING *
+    `;
+    return { data, error: null };
+  } catch (error) {
+    return { data: null, error };
+  }
+}
+
+export async function getCollabList(listId) {
+  try {
+    const data = await sql`
+      SELECT * FROM collaborative_lists WHERE id = ${listId} LIMIT 1
+    `;
+    return data[0] || null;
+  } catch (error) {
+    return null;
+  }
+}
+
+export async function getCollabListMembers(listId) {
+  try {
+    const data = await sql`
+      SELECT clm.*, p.username, p.full_name, p.avatar_url 
+      FROM collaborative_list_members clm
+      JOIN profiles p ON clm.user_id = p.id
+      WHERE clm.list_id = ${listId}
+    `;
+    return data || [];
+  } catch (error) {
+    return [];
+  }
+}
+
+export async function inviteFriendToCollabList(listId, userId, role = 'editor') {
+  try {
+    const data = await sql`
+      INSERT INTO collaborative_list_members (list_id, user_id, role)
+      VALUES (${listId}, ${userId}, ${role})
+      ON CONFLICT (list_id, user_id) DO UPDATE SET role = EXCLUDED.role
+      RETURNING *
+    `;
+    return { data, error: null };
+  } catch (error) {
+    return { data: null, error };
+  }
+}
+
+export async function removeMovieFromCollabList(listId, tmdbId) {
+  try {
+    await sql`
+      DELETE FROM collaborative_list_movies 
+      WHERE list_id = ${listId} AND tmdb_id = ${Number(tmdbId)}
+    `;
+    return { error: null };
+  } catch (error) {
+    return { error };
+  }
+}

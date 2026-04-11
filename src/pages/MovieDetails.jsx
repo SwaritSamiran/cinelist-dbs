@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { fetchMovieDetails, getImageUrl } from '../services/tmdb';
-import { setMovieStatus, removeMovieStatus, getMovieStatus, cacheMovie } from '../services/database';
+import { setMovieStatus, removeMovieStatus, getMovieStatus, cacheMovie, getUserCollabLists, addMovieToCollabList } from '../services/database';
 import { useAuth } from '../contexts/AuthContext';
-import { ArrowLeft, Star, Clock, Calendar, Check, Plus, Heart } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { ArrowLeft, Star, Clock, Calendar, Check, Plus, Heart, LayoutList, X } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function MovieDetails() {
   const { id } = useParams();
@@ -14,6 +14,9 @@ export default function MovieDetails() {
   const [loading, setLoading] = useState(true);
   const [activeAction, setActiveAction] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const [collabLists, setCollabLists] = useState([]);
+  const [showCollabModal, setShowCollabModal] = useState(false);
+  const [addingToCollab, setAddingToCollab] = useState(null);
 
   useEffect(() => {
     fetchMovieDetails(id).then(data => {
@@ -49,6 +52,27 @@ export default function MovieDetails() {
       console.error('Error updating movie status:', error);
       alert('Failed to update movie status');
     }
+    setActionLoading(false);
+  };
+
+  const handleAddToCollab = async (listId) => {
+    setAddingToCollab(listId);
+    try {
+      await addMovieToCollabList(listId, movie.id, user.id, movie);
+      alert('Movie added to collaborative list!');
+      setShowCollabModal(false);
+    } catch (error) {
+      alert('Failed to add to list');
+    }
+    setAddingToCollab(null);
+  };
+
+  const openCollabModal = async () => {
+    if (!user) return alert('Please log in');
+    setActionLoading(true);
+    const lists = await getUserCollabLists(user.id);
+    setCollabLists(lists);
+    setShowCollabModal(true);
     setActionLoading(false);
   };
 
@@ -129,6 +153,20 @@ export default function MovieDetails() {
                   </button>
                 );
               })}
+              
+              <button
+                onClick={openCollabModal}
+                className="w-full py-3 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all duration-300 cursor-pointer mt-2"
+                style={{
+                  backgroundColor: 'var(--color-card)',
+                  border: '1px solid var(--color-card-border)',
+                  color: 'var(--color-primary)',
+                }}
+                disabled={actionLoading}
+              >
+                <LayoutList className="w-5 h-5" />
+                Add to Collab List
+              </button>
             </div>
           </motion.div>
 
@@ -202,6 +240,49 @@ export default function MovieDetails() {
           </motion.div>
         </div>
       </div>
+
+      <AnimatePresence>
+        {showCollabModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowCollabModal(false)} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="relative w-full max-w-md rounded-3xl p-8 shadow-2xl"
+              style={{ background: 'var(--color-surface)', border: '1px solid var(--color-card-border)' }}
+            >
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-bold" style={{ color: 'var(--color-text)' }}>Select a List</h3>
+                <button onClick={() => setShowCollabModal(false)} className="p-2 hover:bg-[var(--color-card)] rounded-xl transition-colors">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {collabLists.length > 0 ? (
+                <div className="space-y-3">
+                  {collabLists.map(list => (
+                    <button
+                      key={list.id}
+                      onClick={() => handleAddToCollab(list.id)}
+                      disabled={addingToCollab === list.id}
+                      className="w-full p-4 rounded-2xl bg-[var(--color-card)] border border-[var(--color-card-border)] text-left hover:border-[var(--color-primary)] transition-all flex items-center justify-between group"
+                    >
+                      <span className="font-bold" style={{ color: 'var(--color-text)' }}>{list.name}</span>
+                      <Plus className="w-5 h-5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <p style={{ color: 'var(--color-text-muted)' }}>You don't have any collab lists yet.</p>
+                  <button onClick={() => navigate('/collab')} className="mt-4 text-[var(--color-primary)] font-bold">Create one now</button>
+                </div>
+              )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

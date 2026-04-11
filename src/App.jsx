@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
-import { Home, User, Settings, Users, Film } from 'lucide-react';
+import { Home, User, Settings, Users, Film, LayoutList } from 'lucide-react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import HomePage from './pages/HomePage';
 import LandingPage from './pages/LandingPage';
@@ -8,6 +8,8 @@ import MovieDetails from './pages/MovieDetails';
 import ProfilePage from './pages/ProfilePage';
 import SettingsPage from './pages/SettingsPage';
 import FriendsPage from './pages/FriendsPage';
+import CollabListsPage from './pages/CollabListsPage';
+import CollabListDetail from './pages/CollabListDetail';
 import InteractiveBackground from './components/InteractiveBackground';
 
 function Sidebar() {
@@ -18,6 +20,7 @@ function Sidebar() {
     { icon: User, label: 'Profile', path: '/profile' },
     { icon: Home, label: 'Home', path: '/home' },
     { icon: Users, label: 'Friends', path: '/friends' },
+    { icon: LayoutList, label: 'Collab Lists', path: '/collab' },
   ];
 
   return (
@@ -86,6 +89,8 @@ function Layout({ theme, setTheme }) {
           <Route path="/profile/:userId" element={<ProfilePage />} />
           <Route path="/settings" element={<SettingsPage theme={theme} setTheme={setTheme} />} />
           <Route path="/friends" element={<FriendsPage />} />
+          <Route path="/collab" element={<CollabListsPage />} />
+          <Route path="/collab/:id" element={<CollabListDetail />} />
           <Route path="*" element={<Navigate to="/profile" />} />
         </Routes>
       </main>
