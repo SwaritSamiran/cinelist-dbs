@@ -1,0 +1,53 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", system-ui, sans-serif;
+  --color-primary: #8b5cf6;
+  --color-primary-hover: #7c3aed;
+}
+
+/* --- Dark Theme (default) --- */
+:root,
+[data-theme="dark"] {
+  --color-background: #09090b;
+  --color-surface: #18181b;
+  --color-border: #27272a;
+  --color-text: #f4f4f5;
+  --color-text-muted: #a1a1aa;
+  --color-card: rgba(255, 255, 255, 0.03);
+  --color-card-border: rgba(255, 255, 255, 0.06);
+  --particle-color: 139, 92, 246;
+  --particle-opacity: 1;
+}
+
+/* --- Light Theme --- */
+[data-theme="light"] {
+  --color-background: #f8f8fc;
+  --color-surface: #ffffff;
+  --color-border: #e4e4e7;
+  --color-text: #18181b;
+  --color-text-muted: #71717a;
+  --color-card: rgba(0, 0, 0, 0.02);
+  --color-card-border: rgba(0, 0, 0, 0.06);
+  --particle-color: 109, 60, 220;
+  --particle-opacity: 0.6;
+}
+
+@layer base {
+  body {
+    @apply font-sans antialiased overflow-hidden;
+    background-color: var(--color-background);
+    color: var(--color-text);
+    transition: background-color 0.4s ease, color 0.4s ease;
+  }
+}
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
