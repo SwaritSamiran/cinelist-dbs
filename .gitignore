@@ -32,4 +32,4 @@ dist-ssr
 rewrite2.cjs
 auth/
 
-/.env
+.env/
