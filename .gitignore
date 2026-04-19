@@ -31,3 +31,7 @@ dist-ssr
 *.txt
 rewrite2.cjs
 auth/
+
+.env
+.env.*
+.env/
